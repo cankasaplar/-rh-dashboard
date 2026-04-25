@@ -1,5 +1,4 @@
-import React, { useState, useRef, useEffect, useSyncExternalStore, useCallback } from 'react';
-import * as THREE from 'three';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Sparkles,
   Cpu,
@@ -8,7 +7,11 @@ import {
   Command,
   RefreshCcw,
 } from 'lucide-react';
+import { seedLocalAgents } from './engine/ecs';
+import { CausalEngine } from './engine/renderer-three';
+import { addLog, logStore, uiStore, worldStore } from './engine/store';
 import { appId, auth, firebaseApi, firebaseEnabled, rtdb } from './firebaseRuntime';
+import { useStore } from './hooks/useStore';
 
 /**
  * ============================================================================
@@ -18,222 +21,6 @@ import { appId, auth, firebaseApi, firebaseEnabled, rtdb } from './firebaseRunti
 const CODEX_DATE = '2025-07-12';
 const CODEX_VERSION = 'v154.0_AUTHORITY';
 const LOCAL_USER = { uid: 'local-dev' };
-
-/**
- * ============================================================================
- * 2. DETERMINISTIC ECS STORE
- * ============================================================================
- */
-const createStore = (initialState) => {
-  let state = initialState;
-  const listeners = new Set();
-  return {
-    getState: () => state,
-    subscribe: (cb) => {
-      listeners.add(cb);
-      return () => listeners.delete(cb);
-    },
-    setState: (updater) => {
-      const nextState = typeof updater === 'function' ? updater(state) : updater;
-      if (nextState !== state) {
-        state = nextState;
-        listeners.forEach((listener) => listener());
-      }
-    },
-  };
-};
-
-const useStore = (store, selector) =>
-  useSyncExternalStore(store.subscribe, () => selector(store.getState()));
-
-const worldStore = createStore({ agents: new Map(), version: 0 });
-const uiStore = createStore({ connected: false, cellId: 'c_alpha', processing: false });
-const logStore = createStore({ logs: [] });
-
-const addLog = (msg, type = 'SYS') => {
-  logStore.setState((prev) => ({
-    logs: [
-      { ts: new Date().toLocaleTimeString(), type, msg, id: crypto.randomUUID() },
-      ...prev.logs,
-    ].slice(0, 15),
-  }));
-};
-
-const createLocalAgent = (idx, phase = 0) => ({
-  pos: {
-    lat: Math.sin(idx * 1.7 + phase) * 58,
-    lng: ((idx * 47 + phase * 90) % 360) - 180,
-  },
-});
-
-const seedLocalAgents = () => {
-  worldStore.setState((prev) => {
-    const next = new Map(prev.agents);
-    for (let idx = 0; idx < 48; idx += 1) {
-      next.set(`local-agent-${idx}`, createLocalAgent(idx));
-    }
-    return { ...prev, agents: next, version: prev.version + 1 };
-  });
-};
-
-/**
- * ============================================================================
- * 3. CAUSAL ENGINE (v154.0 - RESPONSIVE & HARDENED)
- * ============================================================================
- */
-class CausalEngine {
-  constructor(container) {
-    this.container = container;
-    this.active = true;
-    this.disposed = false;
-    this.rafId = null;
-
-    this.needsDataSync = false;
-    this.needsMatrixUpdate = false;
-
-    this.instanceMap = new Map();
-    this.freeSlots = [];
-    this.nextIdx = 0;
-    this.maxSlots = 8000;
-
-    this.dummy = new THREE.Object3D();
-    this.tempPos = new THREE.Vector3();
-    this.tempUp = new THREE.Vector3(0, 0, 1);
-    this.tempNormal = new THREE.Vector3();
-
-    this.initScene();
-    this.initListeners();
-    this.animate(0);
-  }
-
-  initScene() {
-    this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(
-      45,
-      this.container.clientWidth / this.container.clientHeight,
-      1,
-      60000,
-    );
-    this.camera.position.z = 13000;
-
-    this.renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-      powerPreference: 'high-performance',
-    });
-    this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.container.appendChild(this.renderer.domElement);
-
-    this.globeGeo = new THREE.SphereGeometry(3500, 32, 32);
-    this.globeMat = new THREE.MeshBasicMaterial({
-      color: 0x0ea5e9,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.1,
-    });
-    this.globe = new THREE.Mesh(this.globeGeo, this.globeMat);
-
-    this.agentGeo = new THREE.ConeGeometry(35, 95, 4).rotateX(Math.PI / 2);
-    this.agentMat = new THREE.MeshPhongMaterial({ color: 0x0ea5e9, emissive: 0x0369a1 });
-    this.agentMesh = new THREE.InstancedMesh(this.agentGeo, this.agentMat, this.maxSlots);
-
-    this.scene.add(this.globe, this.agentMesh);
-    this.scene.add(new THREE.AmbientLight(0x404040), new THREE.PointLight(0xffffff, 1.5));
-  }
-
-  initListeners() {
-    this.onResize = () => {
-      if (this.disposed) return;
-      this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
-      this.camera.updateProjectionMatrix();
-      this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
-    };
-    window.addEventListener('resize', this.onResize);
-  }
-
-  invalidate() {
-    if (this.needsDataSync) return;
-    this.needsDataSync = true;
-  }
-
-  sync() {
-    if (this.disposed || !this.agentMesh) return;
-    const { agents: agentsMap } = worldStore.getState();
-
-    for (const [id, slotIdx] of this.instanceMap.entries()) {
-      if (!agentsMap.has(id)) {
-        this.dummy.scale.set(0, 0, 0);
-        this.dummy.updateMatrix();
-        this.agentMesh.setMatrixAt(slotIdx, this.dummy.matrix);
-        if (this.freeSlots.length < 5000) this.freeSlots.push(slotIdx);
-        this.instanceMap.delete(id);
-        this.needsMatrixUpdate = true;
-      }
-    }
-
-    for (const [id, agent] of agentsMap) {
-      if (!agent.pos) continue;
-      let slotIdx = this.instanceMap.get(id);
-      if (slotIdx === undefined) {
-        slotIdx = this.freeSlots.length > 0 ? this.freeSlots.pop() : this.nextIdx++;
-        if (slotIdx >= this.maxSlots) continue;
-        this.instanceMap.set(id, slotIdx);
-      }
-
-      const phi = (90 - agent.pos.lat) * (Math.PI / 180);
-      const theta = (agent.pos.lng + 180) * (Math.PI / 180);
-      this.tempPos.set(
-        -3510 * Math.sin(phi) * Math.cos(theta),
-        3510 * Math.cos(phi),
-        3510 * Math.sin(phi) * Math.sin(theta),
-      );
-
-      this.dummy.position.copy(this.tempPos);
-      this.tempNormal.copy(this.tempPos).normalize();
-      this.dummy.quaternion.setFromUnitVectors(this.tempUp, this.tempNormal);
-      this.dummy.scale.set(1, 1, 1);
-      this.dummy.updateMatrix();
-      this.agentMesh.setMatrixAt(slotIdx, this.dummy.matrix);
-      this.needsMatrixUpdate = true;
-    }
-  }
-
-  animate() {
-    if (!this.active || this.disposed) return;
-    this.rafId = requestAnimationFrame(() => this.animate());
-
-    if (this.needsDataSync) {
-      this.sync();
-      this.needsDataSync = false;
-    }
-
-    if (this.needsMatrixUpdate) {
-      this.agentMesh.instanceMatrix.needsUpdate = true;
-      this.needsMatrixUpdate = false;
-    }
-
-    this.globe.rotation.y += 0.00018;
-    this.renderer.render(this.scene, this.camera);
-  }
-
-  dispose() {
-    this.active = false;
-    this.disposed = true;
-    window.removeEventListener('resize', this.onResize);
-    if (this.rafId) cancelAnimationFrame(this.rafId);
-
-    this.globeGeo.dispose();
-    this.globeMat.dispose();
-    this.agentGeo.dispose();
-    this.agentMat.dispose();
-    this.renderer?.dispose();
-    this.scene?.clear();
-    if (this.container && this.renderer?.domElement) {
-      this.container.removeChild(this.renderer.domElement);
-    }
-  }
-}
 
 /**
  * ============================================================================
@@ -282,7 +69,7 @@ export default function App() {
   useEffect(() => {
     if (!containerRef.current || !user) return undefined;
 
-    const engine = new CausalEngine(containerRef.current);
+    const engine = new CausalEngine(containerRef.current, worldStore);
     engineRef.current = engine;
     uiStore.setState((prev) => ({ ...prev, connected: true }));
     addLog(`BOOTING_CODEX_${CODEX_DATE}`, 'SEC');
@@ -327,18 +114,18 @@ export default function App() {
       engine.invalidate();
     };
 
-    firebaseApi.onChildAdded(agentsRef, onAdd);
-    firebaseApi.onChildChanged(agentsRef, onChange);
-    firebaseApi.onChildRemoved(agentsRef, onRemove);
+    const unsubscribers = [
+      firebaseApi.onChildAdded(agentsRef, onAdd),
+      firebaseApi.onChildChanged(agentsRef, onChange),
+      firebaseApi.onChildRemoved(agentsRef, onRemove),
+    ];
 
     const presenceRef = firebaseApi.ref(rtdb, `presence/${appId}/users/${user.uid}`);
     firebaseApi.onDisconnect(presenceRef).remove();
     firebaseApi.set(presenceRef, { status: 'online', ts: Date.now(), cell: cellId });
 
     return () => {
-      firebaseApi.off(agentsRef, 'child_added', onAdd);
-      firebaseApi.off(agentsRef, 'child_changed', onChange);
-      firebaseApi.off(agentsRef, 'child_removed', onRemove);
+      unsubscribers.forEach((unsubscribe) => unsubscribe?.());
       engine.dispose();
       engineRef.current = null;
       uiStore.setState((prev) => ({ ...prev, connected: false }));
