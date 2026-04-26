@@ -54,7 +54,7 @@ export default function App() {
     if (!flash) return undefined;
     const timer = window.setTimeout(() => {
       uiStore.setState((prev) => (prev.flash === flash ? { ...prev, flash: null } : prev));
-    }, 1400);
+    }, 2400);
     return () => window.clearTimeout(timer);
   }, [flash]);
 
@@ -328,7 +328,8 @@ export default function App() {
               <button
                 type="button"
                 onClick={captureSnapshot}
-                disabled={!ui.connected}
+                aria-label="Capture Chronos snapshot"
+                title="Capture Chronos snapshot"
                 className={`p-6 bg-white/5 border rounded-[2rem] hover:bg-white/10 transition-all text-sky-400/60 disabled:opacity-30 lg:p-10 lg:rounded-[3rem] ${
                   flash === 'snapshot_created'
                     ? 'border-sky-400/80 scale-95 shadow-[0_0_45px_rgba(56,189,248,0.35)]'
@@ -362,7 +363,7 @@ export default function App() {
       </div>
 
       {flash === 'snapshot_created' && (
-        <div className="fixed bottom-32 left-1/2 z-30 -translate-x-1/2 rounded-full border border-sky-400/30 bg-black/80 px-6 py-3 text-[10px] font-black uppercase tracking-[0.5em] text-sky-400 shadow-[0_0_45px_rgba(56,189,248,0.35)] animate-pulse">
+        <div className="fixed bottom-56 left-1/2 z-30 -translate-x-1/2 rounded-full border border-sky-400/30 bg-black/90 px-6 py-3 text-[10px] font-black uppercase tracking-[0.5em] text-sky-400 shadow-[0_0_45px_rgba(56,189,248,0.35)] animate-pulse lg:bottom-72">
           SNAPSHOT STORED
         </div>
       )}
