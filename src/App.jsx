@@ -39,12 +39,24 @@ export default function App() {
   const engineRef = useRef();
   const [user, setUser] = useState(null);
   const [command, setCommand] = useState('');
+  const [chronosOpen, setChronosOpen] = useState(true);
   const authInitRef = useRef(false);
 
   const world = useStore(worldStore, useCallback((s) => s, []));
   const ui = useStore(uiStore, useCallback((s) => s, []));
+  const snapshots = useStore(worldStore, useCallback((s) => s.snapshots, []));
+  const flash = useStore(uiStore, useCallback((s) => s.flash, []));
   const logs = useStore(logStore, useCallback((s) => s.logs, []));
   const agentCount = useMemo(() => Object.keys(world.agents).length, [world.agents]);
+  const chronosHasSnapshots = snapshots.length > 0;
+
+  useEffect(() => {
+    if (!flash) return undefined;
+    const timer = window.setTimeout(() => {
+      uiStore.setState((prev) => (prev.flash === flash ? { ...prev, flash: null } : prev));
+    }, 1400);
+    return () => window.clearTimeout(timer);
+  }, [flash]);
 
   useEffect(() => {
     if (authInitRef.current) return undefined;
@@ -132,17 +144,22 @@ export default function App() {
   }, [user, ui.cellId]);
 
   const captureSnapshot = useCallback(() => {
+    addLog('SNAPSHOT_TRIGGERED', 'USER');
     const current = worldStore.getState();
     const snapshot = {
       id: crypto.randomUUID(),
       ts: Date.now(),
       version: current.version,
-      agents: JSON.parse(JSON.stringify(current.agents)),
+      agents: structuredClone(current.agents),
       cell: uiStore.getState().cellId,
     };
     worldStore.setState((prev) => ({
       ...prev,
       snapshots: [snapshot, ...prev.snapshots].slice(0, 10),
+    }));
+    uiStore.setState((prev) => ({
+      ...prev,
+      flash: 'snapshot_created',
     }));
     addLog('DUNYA_GORUNTUSU_KAYDEDILDI', 'SEC');
   }, []);
@@ -217,10 +234,28 @@ export default function App() {
         </div>
       </div>
 
-      <div className="absolute top-4 right-4 z-10 space-y-4 lg:top-10 lg:right-10 lg:space-y-6">
-        <div className="bg-black/90 backdrop-blur-3xl border border-sky-500/10 p-5 rounded-[2rem] w-56 shadow-4xl pointer-events-auto lg:p-8 lg:rounded-[3.5rem] lg:w-64">
+      <button
+        type="button"
+        onClick={() => setChronosOpen((open) => !open)}
+        className="absolute top-4 right-4 z-20 rounded-full border border-sky-500/20 bg-black/80 px-3 py-2 text-[8px] font-black uppercase tracking-widest text-sky-400/60 transition-colors hover:text-sky-200 lg:top-10 lg:right-10"
+      >
+        Chronos_{chronosOpen ? 'Kapat' : 'Ac'}
+      </button>
+
+      <div
+        className={`absolute top-4 right-4 z-10 space-y-4 transition-all duration-500 lg:top-10 lg:right-10 lg:space-y-6 ${
+          chronosOpen ? 'opacity-100' : 'opacity-0 pointer-events-none translate-x-4'
+        }`}
+      >
+        <div
+          className={`mt-12 bg-black/90 backdrop-blur-3xl border border-sky-500/10 p-5 rounded-[2rem] w-56 shadow-4xl pointer-events-auto transition-all duration-300 lg:mt-14 lg:p-8 lg:rounded-[3.5rem] lg:w-64 ${
+            chronosHasSnapshots ? 'opacity-100' : 'opacity-30'
+          }`}
+        >
           <div className="text-[9px] uppercase tracking-widest text-sky-500/30 mb-5 flex items-center gap-3 font-black lg:text-[10px] lg:mb-8">
-            <History size={16} /> Chronos_Beslemesi
+            <span className="flex items-center gap-3">
+              <History size={16} /> Chronos_Beslemesi
+            </span>
           </div>
           <div className="space-y-4 max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
             <button
@@ -231,7 +266,12 @@ export default function App() {
               <span>CANLI_MOD</span>
               <Activity size={14} className={world.mode === 'LIVE' ? 'animate-pulse' : ''} />
             </button>
-            {world.snapshots.map((snapshot, idx) => (
+            {!chronosHasSnapshots && (
+              <div className="rounded-3xl border border-dashed border-sky-500/10 bg-white/5 p-5 text-[9px] font-black uppercase tracking-widest text-sky-500/40">
+                Snapshot_bekleniyor
+              </div>
+            )}
+            {snapshots.map((snapshot, idx) => (
               <button
                 type="button"
                 key={snapshot.id}
@@ -257,7 +297,7 @@ export default function App() {
             <Rewind size={20} className="text-sky-500/20" />
             <div className="flex-1 h-2 bg-sky-500/5 rounded-full relative group cursor-pointer">
               <div className="absolute inset-0 bg-sky-500/10 rounded-full" />
-              {world.snapshots.map((snapshot, i) => (
+              {snapshots.map((snapshot, i) => (
                 <div
                   key={snapshot.id}
                   className="absolute h-2 w-1 bg-sky-400/20 rounded-full"
@@ -289,7 +329,11 @@ export default function App() {
                 type="button"
                 onClick={captureSnapshot}
                 disabled={!ui.connected}
-                className="p-6 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-white/10 transition-all text-sky-400/60 disabled:opacity-30 lg:p-10 lg:rounded-[3rem]"
+                className={`p-6 bg-white/5 border rounded-[2rem] hover:bg-white/10 transition-all text-sky-400/60 disabled:opacity-30 lg:p-10 lg:rounded-[3rem] ${
+                  flash === 'snapshot_created'
+                    ? 'border-sky-400/80 scale-95 shadow-[0_0_45px_rgba(56,189,248,0.35)]'
+                    : 'border-white/10'
+                }`}
               >
                 <GitBranch size={32} className="lg:size-10" />
               </button>
@@ -316,6 +360,12 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {flash === 'snapshot_created' && (
+        <div className="fixed bottom-32 left-1/2 z-30 -translate-x-1/2 rounded-full border border-sky-400/30 bg-black/80 px-6 py-3 text-[10px] font-black uppercase tracking-[0.5em] text-sky-400 shadow-[0_0_45px_rgba(56,189,248,0.35)] animate-pulse">
+          SNAPSHOT STORED
+        </div>
+      )}
 
       <style>{`
         .bg-black\\/95 { background-color: rgba(1, 2, 3, 0.95); }

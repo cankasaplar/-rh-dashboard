@@ -25,7 +25,12 @@ export const worldStore = createStore({
   snapshots: [],
   activeSnapshotIndex: -1,
 });
-export const uiStore = createStore({ connected: false, cellId: 'c_alpha', processing: false });
+export const uiStore = createStore({
+  connected: false,
+  cellId: 'c_alpha',
+  processing: false,
+  flash: null,
+});
 export const logStore = createStore({ logs: [] });
 
 export const addLog = (msg, type = 'SYS') => {
