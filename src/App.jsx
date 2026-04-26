@@ -11,18 +11,24 @@ import { ChevronRight, ShieldCheck, RefreshCcw, Command, BookOpen, Ghost as Ghos
 // 1. KERNEL SETTINGS [v143.0 - MULTI-INDEXED WORLD RUNTIME]
 // ============================================================================
 const CODEX_VERSION = 'v143.0-INDEXED';
-const APP_ID = 'castle-8cb15';
-const REGION = 'europe-west3';
 const RENDER_BUDGET_MS = 16.6;
 
+const requiredEnv = (key) => {
+  const value = import.meta.env[key];
+  if (!value) throw new Error(`Missing required environment variable: ${key}`);
+  return value;
+};
+
+const APP_ID = requiredEnv('VITE_CASTLE_APP_ID');
+const REGION = requiredEnv('VITE_FIREBASE_FUNCTIONS_REGION');
 const firebaseConfig = {
-  apiKey: 'AIzaSyB_Cl3B1QOmwPnVPkHu2WNtLzYHmbnIjPY',
-  authDomain: `${APP_ID}.firebaseapp.com`,
-  projectId: APP_ID,
-  storageBucket: `${APP_ID}.firebasestorage.app`,
-  messagingSenderId: '329052147568',
-  appId: '1:329052147568:web:cd67e78d5676acf7b0c9b5',
-  measurementId: 'G-2YZVPM5J6J',
+  apiKey: requiredEnv('VITE_FIREBASE_API_KEY'),
+  authDomain: requiredEnv('VITE_FIREBASE_AUTH_DOMAIN'),
+  projectId: requiredEnv('VITE_FIREBASE_PROJECT_ID'),
+  storageBucket: requiredEnv('VITE_FIREBASE_STORAGE_BUCKET'),
+  messagingSenderId: requiredEnv('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+  appId: requiredEnv('VITE_FIREBASE_APP_ID'),
+  measurementId: requiredEnv('VITE_FIREBASE_MEASUREMENT_ID'),
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
