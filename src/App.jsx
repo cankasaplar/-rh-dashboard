@@ -30,6 +30,7 @@ const LOCAL_USER = { uid: 'local-dev' };
 export default function App() {
   const containerRef = useRef();
   const engineRef = useRef();
+  const commandInputRef = useRef();
   const [user, setUser] = useState(null);
   const [command, setCommand] = useState('');
   const authInitRef = useRef(false);
@@ -140,6 +141,7 @@ export default function App() {
 
     setTimeout(() => {
       setCommand('');
+      commandInputRef.current?.blur();
       uiStore.setState((prev) => ({ ...prev, processing: false }));
       addLog('ACTION_SYNCED', 'SEC');
     }, 800);
@@ -186,6 +188,7 @@ export default function App() {
             <Command size={28} className={processing ? 'animate-spin text-sky-400' : 'text-sky-400'} />
           </div>
           <input
+            ref={commandInputRef}
             type="text"
             value={command}
             onChange={(event) => setCommand(event.target.value)}
