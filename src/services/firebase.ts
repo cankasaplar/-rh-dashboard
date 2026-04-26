@@ -1,0 +1,11 @@
+import { getApp, getApps, initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getDatabase } from 'firebase/database';
+import { getFirestore } from 'firebase/firestore';
+import { getFunctions } from 'firebase/functions';
+import { runtimeEnv } from '../utils/env';
+export const firebaseApp = getApps().length === 0 ? initializeApp(runtimeEnv.firebase) : getApp();
+export const auth = getAuth(firebaseApp);
+export const firestore = getFirestore(firebaseApp);
+export const rtdb = getDatabase(firebaseApp);
+export const functions = getFunctions(firebaseApp, runtimeEnv.firebaseRegion);

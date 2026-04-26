@@ -1,0 +1,3 @@
+import { logStore } from '../../core/ECSStore';
+import { useStore } from '../../hooks/useStore';
+export default function TelemetryPanel() { const logs = useStore(logStore, (s) => s.logs); return <section className="bg-black/50 border border-white/5 rounded-[2rem] p-5 pointer-events-auto backdrop-blur-xl"><div className="text-[8px] uppercase tracking-[0.4em] text-white/20 font-black mb-4">Kernel_Telemetry</div><div className="space-y-2 text-[10px] text-white/40 max-h-56 overflow-y-auto no-scrollbar">{logs.map((log) => <div key={log.id} className="flex gap-2"><span className="text-cyan-400/30">[{log.ts}]</span><span className={log.type === 'CRITICAL' ? 'text-rose-400' : ''}>{log.msg}</span></div>)}</div></section>; }

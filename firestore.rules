@@ -1,0 +1,21 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Sovereign rule: clients can observe runtime state, but only Cloud Functions can write artifacts.
+    match /artifacts/{appId}/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    match /ghostPetProgress/{progressId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /memoryShards/{shardId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+  }
+}

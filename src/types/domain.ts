@@ -1,0 +1,13 @@
+export type Coordinates = { lat: number; lng: number };
+export type NodeRecord = { pos?: Coordinates; resonance?: number; type?: string; lifecycle?: string; owner?: string; updatedAt?: unknown };
+export type NodesState = { nodes: Record<string, NodeRecord>; isDirty: boolean };
+export type GhostPet = { name?: string; totalInteractions?: number; stage?: string };
+export type MemoryShard = { id: string; content?: string; tags?: string[]; createdAt?: unknown };
+export type Snapshot = { id: string; ts: number; label: string; cellId: string; nodes: Record<string, NodeRecord> };
+export type WorldMode = 'LIVE' | 'REPLAY';
+export type WorldState = { ghostPets: Record<string, GhostPet>; memoryShards: MemoryShard[]; snapshots: Snapshot[]; activeSnapshotId: string | null; mode: WorldMode; version: number };
+export type OpsState = { latency: number; cellLoad: number; heartbeatDrift: number; renderLoad: number; costIndex: number; readsCount: number; writesCount: number; lastCheck: number };
+export type UIState = { currentCell: string; connected: boolean; processing: boolean; globalSpike: boolean; activeLayer: 'NODES' | 'CODEX' | 'GHOSTS' | 'CHRONOS' };
+export type LogEntry = { id: string; ts: string; type: string; msg: string };
+export type LogState = { logs: LogEntry[] };
+export type UserIdentity = { uid: string };

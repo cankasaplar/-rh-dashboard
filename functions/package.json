@@ -1,0 +1,16 @@
+{
+  "name": "functions",
+  "description": "Firebase Cloud Functions for Castle Genesis runtime",
+  "scripts": {
+    "lint": "node --check index.js"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "latest",
+    "firebase-functions": "latest"
+  },
+  "private": true
+}

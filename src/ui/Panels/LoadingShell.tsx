@@ -1,0 +1,1 @@
+export default function LoadingShell() { return <div className="p-4 rounded-3xl bg-black/40 border border-white/5 text-[10px] uppercase tracking-widest text-white/30">Loading runtime panel...</div>; }
