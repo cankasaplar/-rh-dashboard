@@ -289,9 +289,10 @@ export default function App() {
                 type="button"
                 onClick={captureSnapshot}
                 disabled={!ui.connected}
-                className="p-6 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-white/10 transition-all text-sky-400/60 disabled:opacity-30 lg:p-10 lg:rounded-[3rem]"
+                className="flex flex-col items-center gap-2 p-5 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-white/10 transition-all text-sky-400/60 disabled:opacity-30 lg:p-9 lg:rounded-[3rem]"
               >
                 <GitBranch size={32} className="lg:size-10" />
+                <span className="text-[9px] font-black tracking-[0.3em]">SNAP</span>
               </button>
               <button
                 type="button"
