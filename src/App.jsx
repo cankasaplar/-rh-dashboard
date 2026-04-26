@@ -1,0 +1,329 @@
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import {
+  Cpu,
+  Layers,
+  Radio,
+  ChevronRight,
+  Activity,
+  Command,
+  History,
+  GitBranch,
+  Binary,
+  Shield,
+  Zap,
+  Rewind,
+  FastForward,
+} from 'lucide-react';
+import { seedLocalAgents } from './engine/ecs';
+import { RhizohEngine } from './engine/renderer-three';
+import { addLog, logStore, uiStore, worldStore } from './engine/store';
+import { appId, auth, firebaseApi, firebaseEnabled, rtdb } from './firebaseRuntime';
+import { useStore } from './hooks/useStore';
+
+/**
+ * ============================================================================
+ * 1. KERNEL & CONFIGURATION [CODEX_DATE: 2025-07-12]
+ * ============================================================================
+ */
+const CODEX_DATE = '2025-07-12';
+const CODEX_VERSION = 'v157.0_RHIZOH_PRIME';
+const LOCAL_USER = { uid: 'local-dev' };
+
+/**
+ * ============================================================================
+ * 4. MAIN APPLICATION
+ * ============================================================================
+ */
+export default function App() {
+  const containerRef = useRef();
+  const engineRef = useRef();
+  const [user, setUser] = useState(null);
+  const [command, setCommand] = useState('');
+  const authInitRef = useRef(false);
+
+  const world = useStore(worldStore, useCallback((s) => s, []));
+  const ui = useStore(uiStore, useCallback((s) => s, []));
+  const logs = useStore(logStore, useCallback((s) => s.logs, []));
+  const agentCount = useMemo(() => Object.keys(world.agents).length, [world.agents]);
+
+  useEffect(() => {
+    if (authInitRef.current) return undefined;
+    authInitRef.current = true;
+
+    if (!firebaseEnabled) {
+      setUser(LOCAL_USER);
+      addLog('LOCAL_FIREBASE_FALLBACK', 'WARN');
+      return undefined;
+    }
+
+    const unsubAuth = firebaseApi.onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) setUser(firebaseUser);
+      else firebaseApi.signInAnonymously(auth).catch(() => addLog('AUTH_FAILURE', 'ERR'));
+    });
+    return () => unsubAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!containerRef.current || !user) return undefined;
+
+    const engine = new RhizohEngine(containerRef.current);
+    engineRef.current = engine;
+    uiStore.setState((prev) => ({ ...prev, connected: true }));
+    addLog(`OTORITE_AKTIF_${CODEX_DATE}`, 'SEC');
+
+    if (!firebaseEnabled) {
+      seedLocalAgents();
+      engine.invalidate(worldStore.getState().agents);
+      return () => {
+        engine.dispose();
+        engineRef.current = null;
+        uiStore.setState((prev) => ({ ...prev, connected: false }));
+        addLog('OTORITE_OFFLINE', 'WARN');
+      };
+    }
+
+    const agentsRef = firebaseApi.ref(rtdb, `artifacts/${appId}/cells/${ui.cellId}/agents`);
+
+    const onAdd = (snap) => {
+      if (worldStore.getState().mode !== 'LIVE') return;
+      worldStore.setState((prev) => {
+        const next = { ...prev.agents, [snap.key]: snap.val() };
+        engine.invalidate(next);
+        return { ...prev, agents: next, version: prev.version + 1 };
+      });
+    };
+
+    const onChange = (snap) => {
+      if (worldStore.getState().mode !== 'LIVE') return;
+      worldStore.setState((prev) => {
+        const next = { ...prev.agents, [snap.key]: snap.val() };
+        engine.invalidate(next);
+        return { ...prev, agents: next, version: prev.version + 1 };
+      });
+    };
+
+    const onRemove = (snap) => {
+      if (worldStore.getState().mode !== 'LIVE') return;
+      worldStore.setState((prev) => {
+        const next = { ...prev.agents };
+        delete next[snap.key];
+        engine.invalidate(next);
+        return { ...prev, agents: next, version: prev.version + 1 };
+      });
+    };
+
+    const unsubscribers = [
+      firebaseApi.onChildAdded(agentsRef, onAdd),
+      firebaseApi.onChildChanged(agentsRef, onChange),
+      firebaseApi.onChildRemoved(agentsRef, onRemove),
+    ];
+
+    const presenceRef = firebaseApi.ref(rtdb, `presence/${appId}/users/${user.uid}`);
+    firebaseApi.onDisconnect(presenceRef).remove();
+    firebaseApi.set(presenceRef, { status: 'online', ts: Date.now(), cell: ui.cellId });
+
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe?.());
+      engine.dispose();
+      engineRef.current = null;
+      uiStore.setState((prev) => ({ ...prev, connected: false }));
+      addLog('OTORITE_OFFLINE', 'WARN');
+    };
+  }, [user, ui.cellId]);
+
+  const captureSnapshot = useCallback(() => {
+    const current = worldStore.getState();
+    const snapshot = {
+      id: crypto.randomUUID(),
+      ts: Date.now(),
+      version: current.version,
+      agents: JSON.parse(JSON.stringify(current.agents)),
+      cell: uiStore.getState().cellId,
+    };
+    worldStore.setState((prev) => ({
+      ...prev,
+      snapshots: [snapshot, ...prev.snapshots].slice(0, 10),
+    }));
+    addLog('DUNYA_GORUNTUSU_KAYDEDILDI', 'SEC');
+  }, []);
+
+  const setTimeline = useCallback((idx) => {
+    const mode = idx === -1 ? 'LIVE' : 'REPLAY';
+    const current = worldStore.getState();
+    const source = idx === -1 ? current.agents : current.snapshots[idx]?.agents || current.agents;
+    worldStore.setState((prev) => ({ ...prev, mode, activeSnapshotIndex: idx }));
+    engineRef.current?.invalidate(source);
+  }, []);
+
+  const handleExecute = useCallback(() => {
+    const cmd = command.trim().toLowerCase();
+    if (!cmd) return;
+    addLog(`KOMUT_YURUTULUYOR: ${cmd.toUpperCase()}`, 'USER');
+    if (cmd === '/snap') captureSnapshot();
+    if (cmd === '/live') setTimeline(-1);
+    setCommand('');
+  }, [captureSnapshot, command, setTimeline]);
+
+  return (
+    <div className="h-screen w-full bg-[#010203] text-sky-400 font-mono overflow-hidden relative selection:bg-sky-500/30">
+      <div ref={containerRef} className="absolute inset-0 z-0 opacity-80 pointer-events-none" />
+
+      <div className="absolute top-10 left-10 z-10 pointer-events-none space-y-6">
+        <div className="bg-black/90 backdrop-blur-3xl border border-sky-500/20 p-10 rounded-[3.5rem] pointer-events-auto shadow-4xl min-w-[400px]">
+          <div className="flex items-center gap-6 mb-12">
+            <div className="p-5 bg-sky-500/10 rounded-3xl">
+              <Shield className="text-sky-400" size={32} />
+            </div>
+            <div>
+              <div className="text-[12px] uppercase tracking-[0.8em] text-sky-400/30 font-black">
+                Rhizoh_Otoritesi
+              </div>
+              <div className="text-4xl font-black text-white tracking-tighter">{CODEX_VERSION}</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-10">
+            <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
+              <div className="text-[10px] uppercase mb-2 text-sky-500/40 font-black tracking-widest flex items-center gap-2">
+                <Activity size={12} /> Zaman_Modu
+              </div>
+              <div className={`text-xl font-black tracking-widest ${world.mode === 'LIVE' ? 'text-emerald-400' : 'text-amber-400 animate-pulse'}`}>
+                {world.mode === 'LIVE' ? 'CANLI' : 'TEKRAR'}
+              </div>
+            </div>
+            <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
+              <div className="text-[10px] uppercase mb-2 text-sky-500/40 font-black tracking-widest flex items-center gap-2">
+                <Layers size={12} /> Delta_Senk
+              </div>
+              <div className="text-xl font-black text-white tabular-nums">#{world.version}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-black/80 backdrop-blur-2xl border border-sky-500/10 p-8 rounded-[3rem] w-80 pointer-events-auto">
+          <div className="text-[10px] uppercase tracking-widest text-sky-500/20 mb-4 flex items-center gap-2">
+            <Radio size={14} /> Dugum_Telemetrisi
+          </div>
+          <div className="space-y-2 h-40 overflow-hidden text-[10px]">
+            {logs.map((log) => (
+              <div key={log.id} className="flex gap-3 opacity-40 hover:opacity-100 transition-opacity">
+                <span className="text-sky-500/30">[{log.ts}]</span>
+                <span className={log.type === 'ERR' ? 'text-rose-500' : 'text-white/60'}>
+                  {String(log.msg)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="absolute top-10 right-10 z-10 space-y-6">
+        <div className="bg-black/90 backdrop-blur-3xl border border-sky-500/10 p-8 rounded-[3.5rem] w-64 shadow-4xl pointer-events-auto">
+          <div className="text-[10px] uppercase tracking-widest text-sky-500/30 mb-8 flex items-center gap-3 font-black">
+            <History size={16} /> Chronos_Beslemesi
+          </div>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
+            <button
+              type="button"
+              onClick={() => setTimeline(-1)}
+              className={`w-full p-5 rounded-3xl text-[11px] flex justify-between items-center cursor-pointer transition-all border ${world.mode === 'LIVE' ? 'bg-sky-500/10 border-sky-500/30 text-white' : 'bg-white/5 border-transparent text-sky-500/40'}`}
+            >
+              <span>CANLI_MOD</span>
+              <Activity size={14} className={world.mode === 'LIVE' ? 'animate-pulse' : ''} />
+            </button>
+            {world.snapshots.map((snapshot, idx) => (
+              <button
+                type="button"
+                key={snapshot.id}
+                onClick={() => setTimeline(idx)}
+                className={`w-full p-5 rounded-3xl text-[11px] flex flex-col gap-2 cursor-pointer transition-all border ${world.activeSnapshotIndex === idx ? 'bg-amber-500/10 border-amber-500/30 text-white' : 'bg-white/5 border-transparent text-sky-500/40 hover:bg-white/10'}`}
+              >
+                <div className="flex justify-between font-black">
+                  <span>SENK_{snapshot.version}</span>
+                  <Binary size={14} />
+                </div>
+                <div className="text-[9px] opacity-40 italic">
+                  {new Date(snapshot.ts).toLocaleTimeString()}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-full max-w-6xl px-12 z-20 pointer-events-auto">
+        <div className="bg-black/95 backdrop-blur-5xl border border-sky-500/20 rounded-[4.5rem] p-8 flex flex-col gap-8 shadow-4xl ring-1 ring-sky-500/10">
+          <div className="px-12 py-2 flex items-center gap-10">
+            <Rewind size={20} className="text-sky-500/20" />
+            <div className="flex-1 h-2 bg-sky-500/5 rounded-full relative group cursor-pointer">
+              <div className="absolute inset-0 bg-sky-500/10 rounded-full" />
+              {world.snapshots.map((snapshot, i) => (
+                <div
+                  key={snapshot.id}
+                  className="absolute h-2 w-1 bg-sky-400/20 rounded-full"
+                  style={{ left: `${(1 - i / 10) * 100}%` }}
+                />
+              ))}
+              <div
+                className="absolute h-6 w-6 bg-sky-400 rounded-full top-1/2 -translate-y-1/2 shadow-[0_0_20px_#0ea5e9] transition-all border-4 border-black"
+                style={{ left: world.mode === 'LIVE' ? '100%' : `${(1 - world.activeSnapshotIndex / 10) * 100}%` }}
+              />
+            </div>
+            <FastForward size={20} className="text-sky-500/20" />
+          </div>
+
+          <div className="flex items-center gap-10">
+            <div className="bg-sky-500/10 p-6 rounded-full ml-4">
+              <Command size={40} className="text-sky-400" />
+            </div>
+            <input
+              type="text"
+              value={command}
+              onChange={(event) => setCommand(event.target.value)}
+              onKeyDown={(event) => event.key === 'Enter' && handleExecute()}
+              placeholder="KOMUT_GIRIS..."
+              className="flex-1 bg-transparent border-none outline-none text-sky-50 text-3xl font-black tracking-[0.3em] uppercase placeholder:text-sky-900/30"
+            />
+            <div className="flex gap-6 pr-4">
+              <button
+                type="button"
+                onClick={captureSnapshot}
+                disabled={!ui.connected}
+                className="p-10 bg-white/5 border border-white/10 rounded-[3rem] hover:bg-white/10 transition-all text-sky-400/60 disabled:opacity-30"
+              >
+                <GitBranch size={40} />
+              </button>
+              <button
+                type="button"
+                onClick={handleExecute}
+                disabled={!ui.connected}
+                className="p-12 bg-sky-600 rounded-[3.5rem] hover:bg-sky-400 transition-all active:scale-95 shadow-[0_0_80px_rgba(14,165,233,0.4)] group disabled:opacity-30"
+              >
+                <ChevronRight className="text-black group-hover:translate-x-2 transition-transform" size={48} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-between mt-12 px-20 text-[11px] uppercase tracking-[1em] font-black text-sky-500/20 items-center">
+          <div className="flex items-center gap-5">
+            <Zap size={16} /> OLCEK: {agentCount} BIRIM
+          </div>
+          <div
+            className={`flex items-center gap-5 ${ui.connected ? 'text-emerald-400/40' : 'text-rose-400/40'}`}
+          >
+            {firebaseEnabled ? 'FIREBASE_CANLI' : 'LOCAL_CANLI'} <Cpu size={16} />
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        .bg-black\\/95 { background-color: rgba(1, 2, 3, 0.95); }
+        .backdrop-blur-5xl { backdrop-filter: blur(60px); }
+        input::placeholder { font-weight: 900; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        body { background: #010203; }
+      `}</style>
+    </div>
+  );
+}
