@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "castle-genesis",
+    "castle-genesis": "castle-genesis"
+  }
+}

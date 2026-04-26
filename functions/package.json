@@ -1,0 +1,16 @@
+{
+  "name": "castle-genesis-functions",
+  "version": "149.2.0",
+  "description": "Castle Genesis Firebase Functions",
+  "main": "index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "lint": "node --check index.js"
+  },
+  "dependencies": {
+    "firebase-functions": "^7.0.0"
+  },
+  "devDependencies": {}
+}
