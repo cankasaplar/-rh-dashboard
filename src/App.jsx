@@ -151,15 +151,22 @@ class SovereignEngine {
 
   setupGlobe() {
     this.globeGeometry = new THREE.SphereGeometry(3500, 64, 64);
-    this.globeMaterial = new THREE.MeshPhongMaterial({
-      color: 0x050a15,
+    this.globeMaterial = new THREE.MeshBasicMaterial({
+      color: 0x0891b2,
       wireframe: true,
       transparent: true,
-      opacity: 0.1,
+      opacity: 0.22,
     });
     this.globe = new THREE.Mesh(this.globeGeometry, this.globeMaterial);
-    this.ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    this.scene.add(this.globe, this.ambientLight);
+    this.outerGlowGeometry = new THREE.SphereGeometry(3540, 64, 64);
+    this.outerGlowMaterial = new THREE.MeshBasicMaterial({
+      color: 0x22d3ee,
+      transparent: true,
+      opacity: 0.035,
+      side: THREE.BackSide,
+    });
+    this.outerGlow = new THREE.Mesh(this.outerGlowGeometry, this.outerGlowMaterial);
+    this.scene.add(this.outerGlow, this.globe);
   }
 
   setupInstances() {
@@ -251,6 +258,8 @@ class SovereignEngine {
     this.pinMaterial.dispose();
     this.globeGeometry.dispose();
     this.globeMaterial.dispose();
+    this.outerGlowGeometry.dispose();
+    this.outerGlowMaterial.dispose();
     this.renderer.dispose();
     this.scene.clear();
     if (this.container && this.renderer.domElement.parentNode) {
