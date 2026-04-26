@@ -168,22 +168,22 @@ export default function App() {
     <div className="h-screen w-full bg-[#010203] text-sky-400 font-mono overflow-hidden relative selection:bg-sky-500/30">
       <div ref={containerRef} className="absolute inset-0 z-0 opacity-80 pointer-events-none" />
 
-      <div className="absolute top-10 left-10 z-10 pointer-events-none space-y-6">
-        <div className="bg-black/90 backdrop-blur-3xl border border-sky-500/20 p-10 rounded-[3.5rem] pointer-events-auto shadow-4xl min-w-[400px]">
-          <div className="flex items-center gap-6 mb-12">
-            <div className="p-5 bg-sky-500/10 rounded-3xl">
+      <div className="absolute top-4 left-4 z-10 pointer-events-none space-y-4 lg:top-10 lg:left-10 lg:space-y-6">
+        <div className="bg-black/90 backdrop-blur-3xl border border-sky-500/20 p-5 rounded-[2rem] pointer-events-auto shadow-4xl min-w-[300px] lg:p-10 lg:rounded-[3.5rem] lg:min-w-[400px]">
+          <div className="flex items-center gap-4 mb-6 lg:gap-6 lg:mb-12">
+            <div className="p-4 bg-sky-500/10 rounded-3xl lg:p-5">
               <Shield className="text-sky-400" size={32} />
             </div>
             <div>
-              <div className="text-[12px] uppercase tracking-[0.8em] text-sky-400/30 font-black">
+              <div className="text-[10px] uppercase tracking-[0.5em] text-sky-400/30 font-black lg:text-[12px] lg:tracking-[0.8em]">
                 Rhizoh_Otoritesi
               </div>
-              <div className="text-4xl font-black text-white tracking-tighter">{CODEX_VERSION}</div>
+              <div className="text-2xl font-black text-white tracking-tighter lg:text-4xl">{CODEX_VERSION}</div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-10">
-            <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
+          <div className="grid grid-cols-2 gap-4 lg:gap-10">
+            <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5 lg:p-8 lg:rounded-[2.5rem]">
               <div className="text-[10px] uppercase mb-2 text-sky-500/40 font-black tracking-widest flex items-center gap-2">
                 <Activity size={12} /> Zaman_Modu
               </div>
@@ -191,7 +191,7 @@ export default function App() {
                 {world.mode === 'LIVE' ? 'CANLI' : 'TEKRAR'}
               </div>
             </div>
-            <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
+            <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5 lg:p-8 lg:rounded-[2.5rem]">
               <div className="text-[10px] uppercase mb-2 text-sky-500/40 font-black tracking-widest flex items-center gap-2">
                 <Layers size={12} /> Delta_Senk
               </div>
@@ -200,7 +200,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="bg-black/80 backdrop-blur-2xl border border-sky-500/10 p-8 rounded-[3rem] w-80 pointer-events-auto">
+        <div className="bg-black/80 backdrop-blur-2xl border border-sky-500/10 p-5 rounded-[2rem] w-72 pointer-events-auto lg:p-8 lg:rounded-[3rem] lg:w-80">
           <div className="text-[10px] uppercase tracking-widest text-sky-500/20 mb-4 flex items-center gap-2">
             <Radio size={14} /> Dugum_Telemetrisi
           </div>
@@ -217,9 +217,9 @@ export default function App() {
         </div>
       </div>
 
-      <div className="absolute top-10 right-10 z-10 space-y-6">
-        <div className="bg-black/90 backdrop-blur-3xl border border-sky-500/10 p-8 rounded-[3.5rem] w-64 shadow-4xl pointer-events-auto">
-          <div className="text-[10px] uppercase tracking-widest text-sky-500/30 mb-8 flex items-center gap-3 font-black">
+      <div className="absolute top-4 right-4 z-10 space-y-4 lg:top-10 lg:right-10 lg:space-y-6">
+        <div className="bg-black/90 backdrop-blur-3xl border border-sky-500/10 p-5 rounded-[2rem] w-56 shadow-4xl pointer-events-auto lg:p-8 lg:rounded-[3.5rem] lg:w-64">
+          <div className="text-[9px] uppercase tracking-widest text-sky-500/30 mb-5 flex items-center gap-3 font-black lg:text-[10px] lg:mb-8">
             <History size={16} /> Chronos_Beslemesi
           </div>
           <div className="space-y-4 max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
@@ -251,9 +251,9 @@ export default function App() {
         </div>
       </div>
 
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-full max-w-6xl px-12 z-20 pointer-events-auto">
-        <div className="bg-black/95 backdrop-blur-5xl border border-sky-500/20 rounded-[4.5rem] p-8 flex flex-col gap-8 shadow-4xl ring-1 ring-sky-500/10">
-          <div className="px-12 py-2 flex items-center gap-10">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-6xl px-6 z-20 pointer-events-auto lg:bottom-12 lg:px-12">
+        <div className="bg-black/95 backdrop-blur-5xl border border-sky-500/20 rounded-[2.75rem] p-5 flex flex-col gap-5 shadow-4xl ring-1 ring-sky-500/10 lg:rounded-[4.5rem] lg:p-8 lg:gap-8">
+          <div className="px-6 py-2 flex items-center gap-6 lg:px-12 lg:gap-10">
             <Rewind size={20} className="text-sky-500/20" />
             <div className="flex-1 h-2 bg-sky-500/5 rounded-full relative group cursor-pointer">
               <div className="absolute inset-0 bg-sky-500/10 rounded-full" />
@@ -272,9 +272,9 @@ export default function App() {
             <FastForward size={20} className="text-sky-500/20" />
           </div>
 
-          <div className="flex items-center gap-10">
-            <div className="bg-sky-500/10 p-6 rounded-full ml-4">
-              <Command size={40} className="text-sky-400" />
+          <div className="flex items-center gap-5 lg:gap-10">
+            <div className="bg-sky-500/10 p-4 rounded-full ml-2 lg:p-6 lg:ml-4">
+              <Command size={32} className="text-sky-400 lg:size-10" />
             </div>
             <input
               type="text"
@@ -282,30 +282,30 @@ export default function App() {
               onChange={(event) => setCommand(event.target.value)}
               onKeyDown={(event) => event.key === 'Enter' && handleExecute()}
               placeholder="KOMUT_GIRIS..."
-              className="flex-1 bg-transparent border-none outline-none text-sky-50 text-3xl font-black tracking-[0.3em] uppercase placeholder:text-sky-900/30"
+              className="flex-1 bg-transparent border-none outline-none text-sky-50 text-xl font-black tracking-[0.2em] uppercase placeholder:text-sky-900/30 lg:text-3xl lg:tracking-[0.3em]"
             />
-            <div className="flex gap-6 pr-4">
+            <div className="flex gap-3 pr-2 lg:gap-6 lg:pr-4">
               <button
                 type="button"
                 onClick={captureSnapshot}
                 disabled={!ui.connected}
-                className="p-10 bg-white/5 border border-white/10 rounded-[3rem] hover:bg-white/10 transition-all text-sky-400/60 disabled:opacity-30"
+                className="p-6 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-white/10 transition-all text-sky-400/60 disabled:opacity-30 lg:p-10 lg:rounded-[3rem]"
               >
-                <GitBranch size={40} />
+                <GitBranch size={32} className="lg:size-10" />
               </button>
               <button
                 type="button"
                 onClick={handleExecute}
                 disabled={!ui.connected}
-                className="p-12 bg-sky-600 rounded-[3.5rem] hover:bg-sky-400 transition-all active:scale-95 shadow-[0_0_80px_rgba(14,165,233,0.4)] group disabled:opacity-30"
+                className="p-7 bg-sky-600 rounded-[2.25rem] hover:bg-sky-400 transition-all active:scale-95 shadow-[0_0_80px_rgba(14,165,233,0.4)] group disabled:opacity-30 lg:p-12 lg:rounded-[3.5rem]"
               >
-                <ChevronRight className="text-black group-hover:translate-x-2 transition-transform" size={48} />
+                <ChevronRight className="text-black group-hover:translate-x-2 transition-transform lg:size-12" size={36} />
               </button>
             </div>
           </div>
         </div>
 
-        <div className="flex justify-between mt-12 px-20 text-[11px] uppercase tracking-[1em] font-black text-sky-500/20 items-center">
+        <div className="flex justify-between mt-6 px-10 text-[10px] uppercase tracking-[0.6em] font-black text-sky-500/20 items-center lg:mt-12 lg:px-20 lg:text-[11px] lg:tracking-[1em]">
           <div className="flex items-center gap-5">
             <Zap size={16} /> OLCEK: {agentCount} BIRIM
           </div>
