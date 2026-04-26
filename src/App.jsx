@@ -44,6 +44,7 @@ const MAX_LOGS = 12;
 const firebaseConfig = {
   apiKey: 'AIzaSyB_Cl3B1QOmwPnVPkHu2WNtLzYHmbnIjPY',
   authDomain: `${APP_ID}.firebaseapp.com`,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || `https://${APP_ID}-default-rtdb.firebaseio.com`,
   projectId: APP_ID,
   storageBucket: `${APP_ID}.firebasestorage.app`,
   messagingSenderId: '329052147568',

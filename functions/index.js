@@ -2,15 +2,18 @@
  * BRAIN_LAYER: CASTLE GENESIS
  * Central causal authority for world reality.
  */
-const functions = require('firebase-functions');
+const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 
-admin.initializeApp();
+const APP_ID = 'castle-8cb15';
+const REGION = 'europe-west3';
+
+admin.initializeApp({
+  databaseURL: process.env.FIREBASE_DATABASE_URL || `https://${APP_ID}-default-rtdb.firebaseio.com`,
+});
 
 const db = admin.firestore();
 const rtdb = admin.database();
-const APP_ID = 'castle-8cb15';
-const REGION = 'europe-west3';
 
 /**
  * RESOLVE_CAUSAL_ACTION
