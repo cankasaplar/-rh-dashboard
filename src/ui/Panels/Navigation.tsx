@@ -1,0 +1,3 @@
+import { NavLink } from 'react-router-dom';
+const links = [['/', 'Home'], ['/authority', 'Authority'], ['/chronos', 'Chronos'], ['/codex', 'Codex'], ['/ghost', 'Ghost']];
+export default function Navigation() { return <nav className="flex flex-wrap gap-2 pointer-events-auto">{links.map(([to, label]) => <NavLink key={to} to={to} className={({ isActive }) => `px-3 py-2 rounded-2xl text-[10px] uppercase font-black tracking-widest border transition-all ${isActive ? 'bg-cyan-500/20 border-cyan-400/40 text-white' : 'bg-black/40 border-white/5 text-white/30 hover:text-white/70'}`}>{label}</NavLink>)}</nav>; }
