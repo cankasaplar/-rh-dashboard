@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "castle-genesis",
     "public": "dist",
     "ignore": [
       "firebase.json",
@@ -36,5 +37,19 @@
         "destination": "/index-gate.html"
       }
     ]
-  }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "runtime": "nodejs22",
+      "region": "europe-west3",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log"
+      ]
+    }
+  ]
 }

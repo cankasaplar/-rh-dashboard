@@ -6,9 +6,16 @@ replaced with underscores.
 
 ## Runtime config
 
-Provide config with either `window.__firebase_config` or `VITE_FIREBASE_CONFIG`.
-Both values must be a Firebase web app config JSON object. `VITE_APP_ID`
-defaults to `castle-genesis`.
+The app ships with the `castle-genesis` Firebase web config:
+
+- App nickname: `castle genesis`
+- App ID: `1:249221773705:web:5b29fb17e0c1746a968958`
+- Hosting site: `castle-genesis`
+- Measurement ID: `G-JS2YX02B12`
+
+Override config with either `window.__firebase_config` or `VITE_FIREBASE_CONFIG`
+when running in a different Firebase project. `VITE_APP_ID` defaults to
+`castle-genesis`.
 
 ## Firestore reads
 
@@ -45,3 +52,7 @@ The command input calls the callable function `resolveCausalAction` in
 - `cellId`
 - `version`
 - `timestamp`
+
+The included function validates commands, writes accepted commands to
+`artifacts/castle-genesis/public/data/commands`, and returns the normalized
+command payload.

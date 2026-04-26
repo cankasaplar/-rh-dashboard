@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useSyncExternalStore, useCallback } from 'react';
 import * as THREE from 'three';
 import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAnalytics, isSupported as isAnalyticsSupported } from 'firebase/analytics';
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 import { getFirestore, collection, onSnapshot } from 'firebase/firestore';
 import { getDatabase, ref, onChildAdded, onChildChanged, onChildRemoved, set, onDisconnect, off } from 'firebase/database';
@@ -18,7 +19,17 @@ import {
 
 const CODEX_VERSION = 'v149.2-PATH-SANITY';
 const REGION = 'europe-west3';
-const CODEX_DATE = '2025-07-12';
+const CODEX_DATE = import.meta.env.VITE_CODEX_DATE || '2025-07-12';
+const CASTLE_GENESIS_FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyC5HDBeYGoEfFQW9SDIpCKqmxqNP66fcQE',
+  authDomain: 'castle-genesis.firebaseapp.com',
+  databaseURL: 'https://castle-genesis-default-rtdb.firebaseio.com',
+  projectId: 'castle-genesis',
+  storageBucket: 'castle-genesis.firebasestorage.app',
+  messagingSenderId: '249221773705',
+  appId: '1:249221773705:web:5b29fb17e0c1746a968958',
+  measurementId: 'G-JS2YX02B12',
+};
 
 const safeJsonParse = (raw) => {
   if (!raw) return null;
@@ -30,7 +41,8 @@ const safeJsonParse = (raw) => {
   }
 };
 
-const firebaseConfig = safeJsonParse(globalThis.__firebase_config || import.meta.env.VITE_FIREBASE_CONFIG);
+const firebaseConfig = safeJsonParse(globalThis.__firebase_config || import.meta.env.VITE_FIREBASE_CONFIG)
+  || CASTLE_GENESIS_FIREBASE_CONFIG;
 const rawAppId = typeof globalThis.__app_id !== 'undefined'
   ? globalThis.__app_id
   : import.meta.env.VITE_APP_ID || 'castle-genesis';
@@ -41,6 +53,7 @@ let db = null;
 let auth = null;
 let rtdb = null;
 let functions = null;
+let analyticsReady = false;
 
 try {
   if (firebaseConfig) {
@@ -49,6 +62,14 @@ try {
     auth = getAuth(app);
     rtdb = getDatabase(app);
     functions = getFunctions(app, REGION);
+    isAnalyticsSupported()
+      .then((supported) => {
+        if (supported) {
+          getAnalytics(app);
+          analyticsReady = true;
+        }
+      })
+      .catch((err) => console.warn('ANALYTICS_INIT_SKIP:', err));
   } else {
     console.warn('FIREBASE_CONFIG_MISSING: Set VITE_FIREBASE_CONFIG or window.__firebase_config.');
   }
