@@ -54,7 +54,7 @@ export default function App() {
     if (!flash) return undefined;
     const timer = window.setTimeout(() => {
       uiStore.setState((prev) => (prev.flash === flash ? { ...prev, flash: null } : prev));
-    }, 2400);
+    }, 4000);
     return () => window.clearTimeout(timer);
   }, [flash]);
 
@@ -363,8 +363,14 @@ export default function App() {
       </div>
 
       {flash === 'snapshot_created' && (
-        <div className="fixed bottom-56 left-1/2 z-30 -translate-x-1/2 rounded-full border border-sky-400/30 bg-black/90 px-6 py-3 text-[10px] font-black uppercase tracking-[0.5em] text-sky-400 shadow-[0_0_45px_rgba(56,189,248,0.35)] animate-pulse lg:bottom-72">
+        <div className="fixed bottom-56 left-1/2 z-30 -translate-x-1/2 rounded-full border border-sky-400/50 bg-black/95 px-8 py-4 text-sm font-black uppercase tracking-[0.5em] text-sky-300 shadow-[0_0_60px_rgba(56,189,248,0.55)] animate-pulse lg:bottom-72">
           SNAPSHOT STORED
+        </div>
+      )}
+
+      {world.mode === 'REPLAY' && (
+        <div className="fixed top-32 left-1/2 z-30 -translate-x-1/2 rounded-full border border-amber-400/40 bg-black/90 px-6 py-3 text-[10px] font-black uppercase tracking-[0.5em] text-amber-300 shadow-[0_0_45px_rgba(251,191,36,0.35)]">
+          CHRONOS REPLAY ACTIVE
         </div>
       )}
 
